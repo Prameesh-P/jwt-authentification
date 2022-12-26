@@ -128,4 +128,24 @@ func Refresh(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	//30 second left on our old token and that time we will create new token
+	if time.Unix(claims.ExpiresAt, 0).Sub(time.Now()) > 30*time.Second {
+		//we are checking the token expiration time is greater than 30 second
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	//this all method similar to the Login handler
+	expirationTime := time.Now().Add(time.Minute * 5)
+	claims.ExpiresAt = expirationTime.Unix()
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims)
+	tokenString, err := token.SignedString(JwtKey)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:    "new_token",
+		Value:   tokenString,
+		Expires: expirationTime,
+	})
 }
