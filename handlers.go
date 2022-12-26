@@ -101,5 +101,31 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 // Refresh and we want to refresh our token.
 func Refresh(w http.ResponseWriter, r *http.Request) {
-
+	//this is similar to Home handler
+	//we are passing our cookie value "token".
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			//if no cookie that is Unauthorized
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		//if any other error that is a bad request
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	//storing our cookie value to tokenStr
+	tokenStr := cookie.Value
+	claims := &Claims{} //and storing Claims on claims variable
+	//we are passing with jwt.ParseWithClaims
+	tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return JwtKey, nil
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if !tkn.Valid { //if token not valid status unauthorized
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
 }
