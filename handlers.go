@@ -73,17 +73,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // Home this is a home handler
 func Home(w http.ResponseWriter, r *http.Request) {
+	//we are passing our cookie value "token".
 	cookie, err := r.Cookie("token")
 	if err != nil {
-
 		if err == http.ErrNoCookie {
+			//if no cookie that is Unauthorized
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+		//if any other error that is a bad request
 		w.WriteHeader(http.StatusBadRequest)
 	}
+	//storing our cookie value to tokenStr
 	tokenStr := cookie.Value
-	claims := &Claims{}
+	claims := &Claims{} //and storing Claims on claims variable
+
 	tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil
 	})
