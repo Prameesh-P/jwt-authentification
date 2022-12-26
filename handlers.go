@@ -17,13 +17,11 @@ var Users = map[string]string{
 	"Prameesh": "12345",
 }
 
-//Credentials for check api request data..
-
+// Credentials for check api request data..
 type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
-
 type Claims struct {
 	Username           string `json:"username"`
 	jwt.StandardClaims        //Inside this have lot of preset value.Now I am using Expire At keyword.
@@ -42,7 +40,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//if anything on that credential we want check our expected password and credential password is same.
-
 	expectedPassword, ok := Users[credentials.Username] //if you get actual password ok is true.
 	//else ok is false
 	if !ok || expectedPassword != credentials.Password { // not ok(!ok) means our expected password is wrong
@@ -68,7 +65,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Value:   tokenString,
 		Expires: expirationTime,
 	})
-
 }
 
 // Home this is a home handler
@@ -87,7 +83,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	//storing our cookie value to tokenStr
 	tokenStr := cookie.Value
 	claims := &Claims{} //and storing Claims on claims variable
-
+	//we are passing with jwt.ParseWithClaims
 	tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
 		return JwtKey, nil
 	})
@@ -95,13 +91,15 @@ func Home(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	if !tkn.Valid {
+	if !tkn.Valid { //if token not valid status unauthorized
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
+	//else we are welcome the user
 	w.Write([]byte(fmt.Sprintf("Hello %s", claims.Username)))
 }
 
+// Refresh and we want to refresh our token.
 func Refresh(w http.ResponseWriter, r *http.Request) {
 
 }
