@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"time"
@@ -23,16 +24,11 @@ type Credentials struct {
 	Password string `json:"password"`
 }
 
-
 type Claims struct {
-	Username string `json:"username"`
-	jwt.StandardClaims //Inside this have lot of preset value.Now I am using Expire At keyword.
+	Username           string `json:"username"`
+	jwt.StandardClaims        //Inside this have lot of preset value.Now I am using Expire At keyword.
 }
 
-// Home this is a home handler
-func Home(w http.ResponseWriter, r *http.Request) {
-
-}
 // Login this is a login handler
 func Login(w http.ResponseWriter, r *http.Request) {
 	// here we are create the object of the Credentials struct.
@@ -48,33 +44,60 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	//if anything on that credential we want check our expected password and credential password is same.
 
 	expectedPassword, ok := Users[credentials.Username] //if you get actual password ok is true.
-														//else ok is false
-	if !ok || expectedPassword != credentials.Password {// not ok(!ok) means our expected password is wrong
+	//else ok is false
+	if !ok || expectedPassword != credentials.Password { // not ok(!ok) means our expected password is wrong
 
-		w.WriteHeader(http.StatusBadRequest)			// and return to badRequest
+		w.WriteHeader(http.StatusBadRequest) // and return to badRequest
 		return
 	}
 	//everything is ok we are creating an expiration time
 	expirationTime := time.Now().Add(time.Minute * 5)
 	//and we are updating Claims variable
 	claims := Claims{
-		Username: credentials.Username,
-		StandardClaims:jwt.StandardClaims{ExpiresAt: expirationTime.Unix()
-		},
+		Username:       credentials.Username,
+		StandardClaims: jwt.StandardClaims{ExpiresAt: expirationTime.Unix()},
 	}
-	token:=jwt.NewWithClaims(jwt.SigningMethodES256,claims)//and finally we are passing signing method.
-	tokenString,err:=token.SignedString(JwtKey)
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, claims) //and finally we are passing signing method.
+	tokenString, err := token.SignedString(JwtKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
-	}//and setting our cookie
-	http.SetCookie(w,&http.Cookie{
-		Name: "token",
-		Value: tokenString,
+	} //and setting our cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:    "token",
+		Value:   tokenString,
 		Expires: expirationTime,
 	})
 
 }
+
+// Home this is a home handler
+func Home(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+
+		if err == http.ErrNoCookie {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}
+	tokenStr := cookie.Value
+	claims := &Claims{}
+	tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(token *jwt.Token) (interface{}, error) {
+		return JwtKey, nil
+	})
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	if !tkn.Valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+	w.Write([]byte(fmt.Sprintf("Hello %s", claims.Username)))
+}
+
 func Refresh(w http.ResponseWriter, r *http.Request) {
 
 }
