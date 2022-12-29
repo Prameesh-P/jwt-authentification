@@ -1,4 +1,4 @@
-package main
+package handlers
 
 import (
 	"encoding/json"
@@ -43,7 +43,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	expectedPassword, ok := Users[credentials.Username] //if you get actual password ok is true.
 	//else ok is false
 	if !ok || expectedPassword != credentials.Password { // not ok(!ok) means our expected password is wrong
-
 		w.WriteHeader(http.StatusBadRequest) // and return to badRequest
 		return
 	}
@@ -65,6 +64,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		Value:   tokenString,
 		Expires: expirationTime,
 	})
+	fmt.Println("refreshed")
 }
 
 // Home this is a home handler
